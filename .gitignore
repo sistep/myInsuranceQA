@@ -1,5 +1,6 @@
 # dataset
 insuranceData/
+wiki.en.text.vector/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
