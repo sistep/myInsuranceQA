@@ -3,7 +3,7 @@ import os
 def restore_file(source_filepath,target_filepath):
     source_file=open(source_filepath,'r')
     target_file=open(target_filepath,'w')
-    line=source_file.readline()
+    line=source_file.readline().rstrip("\n")
     while line is not None and line!="":
         record = line.split("\t")
         index = record[0]
@@ -18,8 +18,8 @@ def restore_file(source_filepath,target_filepath):
         if len(record)>2:
             for i in range (2,len(record)):
                 newline+="\t"+record[i]
-        target_file.write(newline)
-        line = source_file.readline()
+        target_file.write(newline+"\n")
+        line = source_file.readline().rstrip("\n")
     source_file.close()
     target_file.close()
     print("restored:",source_file.name," to:",target_file.name)
@@ -27,7 +27,7 @@ def restore_file(source_filepath,target_filepath):
 
 if __name__=='__main__':
     insuranceVocb={}
-    vocbFilePath="../insuranceData/raw/vocabulary"
+    vocbFilePath="../insuranceData/encoded/vocabulary"
     vocbFile=open(vocbFilePath)
     line=vocbFile.readline()
     while line!=None and line!="":
@@ -43,7 +43,7 @@ if __name__=='__main__':
     qafiles = os.listdir(encoded_file_dir)
     for filename in qafiles:
         source_file_path=encoded_file_dir+"/"+filename
-        if "test" in filename or "train" in filename or "valid" in filename:
+        if "encoded" in filename:
             target_file_path = raw_file_dir+"/"+filename[0:filename.rfind(".encoded")]
             restore_file(source_filepath=source_file_path ,target_filepath=target_file_path)
 
