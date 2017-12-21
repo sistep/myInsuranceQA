@@ -21,15 +21,15 @@ def small_demo_file(source_path,target_path,linecount):
         count+=1
     print("from:",source_path,"\n","to:",target_path,"\n","count:",linecount)
 
-if __name__ == "__main__":
-    label2answer_demo=gl.INSURANCE_DATA_DEMO+"InsuranceQA.label2answer.raw"
-    label2answer=gl.INSURANCE_DATA_RAW+"InsuranceQA.label2answer.raw"
+def get_demo_files():
+    label2answer_demo = gl.INSURANCE_DATA_DEMO + "InsuranceQA.label2answer.raw"
+    label2answer = gl.INSURANCE_DATA_RAW + "InsuranceQA.label2answer.raw"
 
-    questions=gl.INSURANCE_DATA_RAW+"InsuranceQA.question.anslabel.raw"
-    questions_demo=gl.INSURANCE_DATA_DEMO+"InsuranceQA.question.anslabel.raw"
+    questions = gl.INSURANCE_DATA_RAW + "InsuranceQA.question.anslabel.raw"
+    questions_demo = gl.INSURANCE_DATA_DEMO + "InsuranceQA.question.anslabel.raw"
 
-    test100=gl.INSURANCE_DATA_RAW+"InsuranceQA.question.anslabel.raw.100.pool.solr.test"
-    test100_demo=gl.INSURANCE_DATA_DEMO+"InsuranceQA.question.anslabel.raw.100.pool.solr.test"
+    test100 = gl.INSURANCE_DATA_RAW + "InsuranceQA.question.anslabel.raw.100.pool.solr.test"
+    test100_demo = gl.INSURANCE_DATA_DEMO + "InsuranceQA.question.anslabel.raw.100.pool.solr.test"
 
     train100 = gl.INSURANCE_DATA_RAW + "InsuranceQA.question.anslabel.raw.100.pool.solr.train"
     train100_demo = gl.INSURANCE_DATA_DEMO + "InsuranceQA.question.anslabel.raw.100.pool.solr.train"
@@ -37,8 +37,13 @@ if __name__ == "__main__":
     valid100 = gl.INSURANCE_DATA_RAW + "InsuranceQA.question.anslabel.raw.100.pool.solr.valid"
     valid100_demo = gl.INSURANCE_DATA_DEMO + "InsuranceQA.question.anslabel.raw.100.pool.solr.valid"
 
-    small_demo_file(label2answer,label2answer_demo,1000)
-    small_demo_file(questions,questions_demo,1000)
+    small_demo_file(label2answer, label2answer_demo, 1000)
+    small_demo_file(questions, questions_demo, 1000)
     small_demo_file(test100, test100_demo, 1000)
     small_demo_file(train100, train100_demo, 1000)
-    small_demo_file(valid100   , valid100_demo, 1000)
+    small_demo_file(valid100, valid100_demo, 1000)
+
+if __name__ == "__main__":
+    vocbFile=gl.VOCB(200)
+    vocbFile_demo=gl.INSURANCE_DATA_DEMO+"vocb.txt"
+    small_demo_file(vocbFile,vocbFile_demo,100)

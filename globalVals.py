@@ -11,15 +11,20 @@ INSURANCE_DATA_DEMO=INSURANCE_DATA_RAW+"demo/"
 
 WORD2VEC_FILE=DATA_FILE+"wiki.en.text.vector/"
 
+def VOCB(vectorSize):
+    return WORD2VEC_FILE+"wiki.en.vector."+str(vectorSize)
+
 ANSWERS="InsuranceQA.label2answer.raw"
 
 QUESTIONS="InsuranceQA.question.anslabel.raw"
 
 def TEST_FILE(poolSize):
-    return "InsuranceQA.question.anslabel.raw."+poolSize+".pool.solr.test"
+    return "InsuranceQA.question.anslabel.raw."+str(poolSize)+".pool.solr.test"
 
 def TRAIN_FILE(poolSize):
-    return "InsuranceQA.question.anslabel.raw."+poolSize+".pool.solr.train"
+    return "InsuranceQA.question.anslabel.raw."+str(poolSize)+".pool.solr.train"
 
 def VALID_FILE(poolSize):
-    return "InsuranceQA.question.anslabel.raw."+poolSize+".pool.solr.valid"
+    return "InsuranceQA.question.anslabel.raw."+str(poolSize)+".pool.solr.valid"
+
+LOG_PATH="../logs/"
