@@ -11,7 +11,9 @@ from keras.layers import Dense, Input, GlobalMaxPooling1D
 from keras.layers import Conv1D, MaxPooling1D, Embedding
 from keras.models import Model
 import globalVals as gl
+import keras.backend as K
 import h5py
+from keras import metrics
 
 
 ISOTIMEFORMAT='%m-%d_%H-%M'
@@ -25,11 +27,11 @@ log_ch.setFormatter(log_formatter)
 logger.addHandler(log_fh)
 logger.addHandler(log_ch)
 logger.setLevel(logging.DEBUG)
-logger.info("starting...")
+logger.info("starting at %s" %time.strftime(ISOTIMEFORMAT,time.localtime()))
 
 MAX_SEQUENCE_LENGTH = 200
 EMBEDDING_DIM = 200
-POOL_SIZE=100
+POOL_SIZE=500
 
 vocabulary_file=open(gl.INSURANCE_DATA_TOKEN+"vocabulary")
 
@@ -80,19 +82,29 @@ logger.info("loading train data from %s" %train_file.name)
 for line in train_file:
     record=line.rstrip("\n").split('\t')
     ques_index=int(record[0])
-    ans_p=map(int,record[1].split())
-    ans_m=map(int,record[2].split())
+    ans_p=int,record[1].split()
+    ans_m=record[2].split()
+    ans_m_num=500-len(ans_p)
     for index in ans_p:
+        index=int(index)
         x_train.append(np.concatenate((ques_seqs[ques_index-1],ans_seqs[index-1])))
         y_train.append(1)
+    ans_m_count=0
     for index in ans_m:
+        ans_m_count+=1
+        if ans_m_count>ans_m_num :
+            break
+        index = int(index)
         x_train.append(np.concatenate((ques_seqs[ques_index - 1], ans_seqs[index - 1])))
         y_train.append(0)
 train_file.close()
 x_train=np.asarray(x_train)
+print(y_train[0:100])
 y_train=to_categorical(y_train,2)
+print(y_train[0:100])
 logger.info("loaded %d %d train data" ,len(x_train),len(y_train))
 
+exit(6)
 # load validation data
 x_val=[]
 y_val=[]
@@ -100,12 +112,19 @@ logger.info("loading validation data from %s" %valid_file.name)
 for line in valid_file:
     record=line.rstrip("\n").split('\t')
     ques_index = int(record[0])
-    ans_p=map(int,record[1].split())
-    ans_m=map(int,record[2].split())
+    ans_p=record[1].split()
+    ans_m=record[2].split()
     for index in ans_p:
+        index = int(index)
         x_val.append(np.concatenate((ques_seqs[ques_index-1],ans_seqs[index-1])))
         y_val.append(1)
+    ans_m_num = 500 - len(ans_p)
+    ans_m_count = 0
     for index in ans_m:
+        ans_m_count += 1
+        if ans_m_count > ans_m_num:
+            break
+        index = int(index)
         x_val.append(np.concatenate((ques_seqs[ques_index - 1], ans_seqs[index - 1])))
         y_val.append(0)
 valid_file.close()
@@ -120,12 +139,19 @@ logger.info("loading test data from %s" %test_file.name)
 for line in test_file:
     record=line.rstrip("\n").split('\t')
     ques_index = int(record[0])
-    ans_p=map(int,record[1].split())
-    ans_m=map(int,record[2].split())
+    ans_p=record[1].split()
+    ans_m=record[2].split()
     for index in ans_p:
+        index = int(index)
         x_test.append(np.concatenate((ques_seqs[ques_index-1],ans_seqs[index-1])))
         y_test.append(1)
+    ans_m_num = 500 - len(ans_p)
+    ans_m_count = 0
     for index in ans_m:
+        ans_m_count += 1
+        if ans_m_count > ans_m_num:
+            break
+        index = int(index)
         x_test.append(np.concatenate((ques_seqs[ques_index - 1], ans_seqs[index - 1])))
         y_test.append(0)
 test_file.close()
@@ -149,22 +175,6 @@ logger.info('shape of tenser:')
 logger.info(x_train.shape)
 logger.info("shape of labels:")
 logger.info(y_train.shape)
-
-# shuffle data
-# indices=np.arange(x_train.shape[0])
-# np.random.shuffle(indices)
-# x_train=x_train[indices]
-# y_train=y_train[indices]
-#
-# indices=np.arange(x_val.shape[0])
-# np.random.shuffle(indices)
-# x_val=x_val[indices]
-# y_val=y_val[indices]
-#
-# indices=np.arange(x_test.shape[0])
-# np.random.shuffle(indices)
-# x_test=x_test[indices]
-# y_test=y_test[indices]
 
 # prepare embedding matrix
 print('Preparing embedding matrix.')
@@ -199,17 +209,32 @@ x = Dense(128, activation='relu')(x)
 preds = Dense(2, activation='sigmoid')(x)
 
 model = Model(sequence_input, preds)
+
+def precision(y_true,y_pred):
+    ques_count=0
+    ques_correct=0
+    count=0;
+    for label in y_pred:
+        pass
+
+
+
+
+
+
 model.compile(loss='categorical_crossentropy',
               optimizer='rmsprop',
               metrics=['acc'])
 
 model.fit(x_train, y_train,
           batch_size=128,
-          epochs=10,
+          epochs=2,
           shuffle=True,
           validation_data=(x_val, y_val))
 
-model.save("./simpleCNN/simpleCNN-1221.h5")
+logger.info("starting at %s" %time.strftime(ISOTIMEFORMAT,time.localtime()))
+
+model.save("./simpleCNN/simpleCNN-1224.h5")
 plot_model(model,to_file="./simpleCNN/SCNN.png")
 
 model.evaluate(x_test,y_test)

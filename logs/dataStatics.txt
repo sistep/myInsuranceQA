@@ -1,0 +1,2 @@
+answers:27413	totalLength:2749787	maxLength:1180	avgLength:100.30959763615803
+questions:16889	totalLength:124352	maxLength:57	avgLength:7.3628989282965245
