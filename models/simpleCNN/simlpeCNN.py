@@ -82,7 +82,7 @@ logger.info("loading train data from %s" %train_file.name)
 for line in train_file:
     record=line.rstrip("\n").split('\t')
     ques_index=int(record[0])
-    ans_p=int,record[1].split()
+    ans_p=record[1].split()
     ans_m=record[2].split()
     ans_m_num=500-len(ans_p)
     for index in ans_p:
@@ -99,12 +99,11 @@ for line in train_file:
         y_train.append(0)
 train_file.close()
 x_train=np.asarray(x_train)
-print(y_train[0:100])
+
 y_train=to_categorical(y_train,2)
-print(y_train[0:100])
+
 logger.info("loaded %d %d train data" ,len(x_train),len(y_train))
 
-exit(6)
 # load validation data
 x_val=[]
 y_val=[]
@@ -210,17 +209,6 @@ preds = Dense(2, activation='sigmoid')(x)
 
 model = Model(sequence_input, preds)
 
-def precision(y_true,y_pred):
-    ques_count=0
-    ques_correct=0
-    count=0;
-    for label in y_pred:
-        pass
-
-
-
-
-
 
 model.compile(loss='categorical_crossentropy',
               optimizer='rmsprop',
@@ -228,7 +216,7 @@ model.compile(loss='categorical_crossentropy',
 
 model.fit(x_train, y_train,
           batch_size=128,
-          epochs=2,
+          epochs=5,
           shuffle=True,
           validation_data=(x_val, y_val))
 
@@ -237,6 +225,12 @@ logger.info("starting at %s" %time.strftime(ISOTIMEFORMAT,time.localtime()))
 model.save("./simpleCNN/simpleCNN-1224.h5")
 plot_model(model,to_file="./simpleCNN/SCNN.png")
 
-model.evaluate(x_test,y_test)
+y_pred=model.predict(x_test)
+
+pred_file="simpleCNN/"+'SCNN-'+time.strftime(ISOTIMEFORMAT,time.localtime())+'.pred'
+true_file="simpleCNN/"+'SCNN-'+time.strftime(ISOTIMEFORMAT,time.localtime())+'.true'
+np.savetxt(pred_file,y_pred)
+np.savetxt(true_file,y_test)
+
 
 

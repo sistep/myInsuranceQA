@@ -1,4 +1,3 @@
-import keras
 import logging
 import time
 import os
@@ -12,13 +11,14 @@ from keras.layers import Dense, Input, GlobalMaxPooling1D
 from keras.layers import Conv1D, MaxPooling1D, Embedding
 from keras.models import Model
 import globalVals as gl
+import keras.backend as K
 import h5py
 from keras import metrics
 
 
 ISOTIMEFORMAT='%m-%d_%H-%M'
 logger=logging.getLogger()
-log_file=gl.LOG_PATH+'SCNN-'+time.strftime(ISOTIMEFORMAT,time.localtime())+'.log'
+log_file=gl.LOG_PATH+'SCNN-hinge-'+time.strftime(ISOTIMEFORMAT,time.localtime())+'.log'
 log_fh=logging.FileHandler(log_file)
 log_ch=logging.StreamHandler()
 log_formatter=logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
@@ -82,17 +82,24 @@ logger.info("loading train data from %s" %train_file.name)
 for line in train_file:
     record=line.rstrip("\n").split('\t')
     ques_index=int(record[0])
-    ans_p=map(int,record[1].split())
-    ans_m=map(int,record[2].split())
+    ans_p=record[1].split()
+    ans_m=record[2].split()
+    ans_m_num=500-len(ans_p)
     for index in ans_p:
+        index=int(index)
         x_train.append(np.concatenate((ques_seqs[ques_index-1],ans_seqs[index-1])))
         y_train.append(1)
+    ans_m_count=0
     for index in ans_m:
+        ans_m_count+=1
+        if ans_m_count>ans_m_num :
+            break
+        index = int(index)
         x_train.append(np.concatenate((ques_seqs[ques_index - 1], ans_seqs[index - 1])))
         y_train.append(0)
 train_file.close()
 x_train=np.asarray(x_train)
-y_train=to_categorical(y_train,2)
+y_train=np.asarray(y_train)
 logger.info("loaded %d %d train data" ,len(x_train),len(y_train))
 
 # load validation data
@@ -102,17 +109,24 @@ logger.info("loading validation data from %s" %valid_file.name)
 for line in valid_file:
     record=line.rstrip("\n").split('\t')
     ques_index = int(record[0])
-    ans_p=map(int,record[1].split())
-    ans_m=map(int,record[2].split())
+    ans_p=record[1].split()
+    ans_m=record[2].split()
     for index in ans_p:
+        index = int(index)
         x_val.append(np.concatenate((ques_seqs[ques_index-1],ans_seqs[index-1])))
         y_val.append(1)
+    ans_m_num = 500 - len(ans_p)
+    ans_m_count = 0
     for index in ans_m:
+        ans_m_count += 1
+        if ans_m_count > ans_m_num:
+            break
+        index = int(index)
         x_val.append(np.concatenate((ques_seqs[ques_index - 1], ans_seqs[index - 1])))
         y_val.append(0)
 valid_file.close()
 logger.info("loaded %d %d validation data" , len(x_val),len(y_val))
-y_val=to_categorical(y_val,2)
+y_val=np.asarray(y_val)
 x_val=np.asarray(x_val)
 
 # load test data
@@ -122,17 +136,24 @@ logger.info("loading test data from %s" %test_file.name)
 for line in test_file:
     record=line.rstrip("\n").split('\t')
     ques_index = int(record[0])
-    ans_p=map(int,record[1].split())
-    ans_m=map(int,record[2].split())
+    ans_p=record[1].split()
+    ans_m=record[2].split()
     for index in ans_p:
+        index = int(index)
         x_test.append(np.concatenate((ques_seqs[ques_index-1],ans_seqs[index-1])))
         y_test.append(1)
+    ans_m_num = 500 - len(ans_p)
+    ans_m_count = 0
     for index in ans_m:
+        ans_m_count += 1
+        if ans_m_count > ans_m_num:
+            break
+        index = int(index)
         x_test.append(np.concatenate((ques_seqs[ques_index - 1], ans_seqs[index - 1])))
         y_test.append(0)
 test_file.close()
 logger.info("loaded %d %d test data" ,len(x_test),len(y_test))
-y_test=to_categorical(y_test,2)
+y_test=np.asarray(y_test)
 x_test=np.asarray(x_val)
 # build index mapping words in the embeddings set
 # to their embedding vector
@@ -152,5 +173,64 @@ logger.info(x_train.shape)
 logger.info("shape of labels:")
 logger.info(y_train.shape)
 
+# prepare embedding matrix
+print('Preparing embedding matrix.')
+embedding_matrix = np.zeros((len(vocb)+1, EMBEDDING_DIM))
+for word,i in vocb.items():
+    embedding_vector = embeddings_index.get(word)
+    if embedding_vector is not None:
+        # words not found in embedding index will be all-zeros.
+        embedding_matrix[i] = embedding_vector
 
-model=keras.models.load_model("./simpleCNN/simpleCNN-1221.h5")
+
+# load pre-trained word embeddings into an Embedding layer
+# note that we set trainable = False so as to keep the embeddings fixed
+embedding_layer = Embedding(len(vocb)+1,
+                            EMBEDDING_DIM,
+                            weights=[embedding_matrix],
+                            input_length=MAX_SEQUENCE_LENGTH*2,
+                            trainable=False)
+
+print('Training model.')
+
+# train a 1D convnet with global maxpooling
+sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH*2,), dtype='int32')
+embedded_sequences = embedding_layer(sequence_input)
+x = Conv1D(1000, 2, activation='relu')(embedded_sequences)
+x = MaxPooling1D(1)(x)
+x = Conv1D(1000, 2, activation='relu')(x)
+x = MaxPooling1D(2)(x)
+x = Conv1D(1000, 2, activation='relu')(x)
+x = GlobalMaxPooling1D()(x)
+x = Dense(200, activation='tanh')(x)
+preds = Dense(1, activation='sigmoid')(x)
+
+model = Model(sequence_input, preds)
+
+
+model.compile(loss='mse',
+              optimizer='adagrad',
+              metrics=['mse'])
+
+model.fit(x_train, y_train,
+          batch_size=64,
+          epochs=2,
+          shuffle=True,
+          validation_data=(x_val, y_val))
+
+logger.info("finished at %s" %time.strftime(ISOTIMEFORMAT,time.localtime()))
+
+logger.info("saving model")
+
+model.save("./simpleCNN/simpleCNN-mse-0107.h5")
+
+logger.info("starting predict")
+y_pred=model.predict(x_test)
+
+pred_file="simpleCNN/"+'SCNN-mse-'+time.strftime(ISOTIMEFORMAT,time.localtime())+'.pred'
+true_file="simpleCNN/"+'SCNN-mse-'+time.strftime(ISOTIMEFORMAT,time.localtime())+'.true'
+np.savetxt(pred_file,y_pred)
+np.savetxt(true_file,y_test)
+
+logger.info("predict finished")
+
